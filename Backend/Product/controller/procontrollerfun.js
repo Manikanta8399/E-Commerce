@@ -192,27 +192,49 @@ const placeorder = async (req, res) => {
   try {
     const address = req.body.address;
     const userid = req.user.id;
+    console.log("Placing order for user:", userid, "Address:", address);
+    
     const cart = await cartmodel
       .findOne({ user: userid })
       .populate("items.product");
+    
     if (!cart || cart.items.length === 0) {
+      console.log("Cart is empty for user:", userid);
       return res.status(400).json({ message: "cart is empty" });
     }
+    
+    console.log("Cart items:", cart.items.length);
+    
     let total = 0;
+    const orderItems = [];
+    
     cart.items.forEach((item) => {
       total += item.product.price * item.quantity;
+      orderItems.push({
+        product: item.product._id,
+        quantity: item.quantity
+      });
     });
+    
+    console.log("Total amount:", total);
+    
     const order = new ordermodel({
       user: userid,
-      items: cart.items,
+      items: orderItems,
       address: address,
       totalamount: total,
     });
+    
     await order.save();
+    console.log("Order saved:", order._id);
+    
     cart.items = [];
     await cart.save();
+    console.log("Cart cleared");
+    
     res.status(201).json(order);
   } catch (error) {
+    console.error("Place order error:", error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -220,11 +242,18 @@ const placeorder = async (req, res) => {
 const getorder = async (req, res) => {
   try {
     const userid = req.user.id;
-    const order = await ordermodel
-      .findOne({ user: userid })
-      .populate("items.product");
-    res.status(200).json(order);
+    console.log("Fetching orders for user:", userid);
+    
+    const orders = await ordermodel
+      .find({ user: userid })
+      .populate("items.product")
+      .sort({ createdAt: -1 }); // Sort by newest first
+    
+    console.log("Found orders:", orders.length);
+    
+    res.status(200).json(orders);
   } catch (err) {
+    console.error("Get order error:", err);
     res.status(400).json({ message: err.message });
   }
 };
@@ -304,6 +333,7 @@ module.exports = {
   updatequantity,
   placeorder,
   getorder,
+  getallorder,
   updatestatus,
   cancelorder,
   payment,

@@ -81,7 +81,7 @@ const ordermiddleware = (req, res, next) => {
 router.post("/placeorder", ordermiddleware, contfun.placeorder);
 
 router.get("/getorder", ordermiddleware, contfun.getorder);
-router.get("/getallorder", tokmiddleware, isadmin, contfun.getorder);
+router.get("/getallorder", tokmiddleware, isadmin, contfun.getallorder);
 router.put("/updatestatus/:id", tokmiddleware, isadmin, contfun.updatestatus);
 router.put("/cancelorder/:id", tokmiddleware, contfun.cancelorder);
 router.put("/payment", tokmiddleware, contfun.payment);
