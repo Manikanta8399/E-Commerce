@@ -11,17 +11,17 @@ router.post("/register", contfun.posdata);
 router.post("/login", contfun.logdata);
 router.get("/getsingleproduct/:id", contfun.getproduct);
 router.get("/getallproduct", contfun.getallproduct);
-//hwtverification middleware
+//jwtverification middleware
 const secret = process.env.secretkey;
 const tokmiddleware = (req, res, next) => {
-  token = req.headers.authorization.split(" ")[1];
+  const token = req.headers.authorization.split(" ")[1];
 
   try {
     if (!token) {
       return res.status(400).send("token mssing");
     }
     const decode = jwt.verify(token, secret);
-    req.userr = decode;
+    req.user = decode;
     next();
   } catch (err) {
     res.status(401).send("token is invalid");
@@ -29,12 +29,11 @@ const tokmiddleware = (req, res, next) => {
 };
 //admin middleware
 const isadmin = (req, res, next) => {
-  if (req.userr.role !== "admin") {
+  if (req.user.role !== "admin") {
     return res.status(401).send("admin only access");
   }
   next();
 };
-
 router.post("/postproduct", tokmiddleware, isadmin, contfun.postproduct);
 router.put("/updateproduct/:id", tokmiddleware, isadmin, contfun.updateproduct);
 router.delete(
@@ -43,4 +42,47 @@ router.delete(
   isadmin,
   contfun.deleteproduct
 );
+
+//cartmiddleware
+const cartmiddleware = (req, res, next) => {
+  const token = req.headers.authorization.split(" ")[1];
+
+  try {
+    if (!token) {
+      return res.status(400).send("please login first");
+    }
+    const decode = jwt.verify(token, secret);
+    req.user = decode;
+    next();
+  } catch (err) {
+    res.status(401).send("token is invalid");
+  }
+};
+router.post("/addcart", cartmiddleware, contfun.addcart);
+router.get("/getcart", cartmiddleware, contfun.getcart);
+router.delete("/delcart", cartmiddleware, contfun.removecartitem);
+router.put("/updatecart", cartmiddleware, contfun.updatequantity);
+
+//ORDERS
+const ordermiddleware = (req, res, next) => {
+  const token = req.headers.authorization.split(" ")[1];
+
+  try {
+    if (!token) {
+      return res.status(400).send("please login first");
+    }
+    const decode = jwt.verify(token, secret);
+    req.user = decode;
+    next();
+  } catch (err) {
+    res.status(401).send("token is invalid");
+  }
+};
+router.post("/placeorder", ordermiddleware, contfun.placeorder);
+
+router.get("/getorder", ordermiddleware, contfun.getorder);
+router.get("/getallorder", tokmiddleware, isadmin, contfun.getorder);
+router.put("/updatestatus/:id", tokmiddleware, isadmin, contfun.updatestatus);
+router.put("/cancelorder/:id", tokmiddleware, contfun.cancelorder);
+router.put("/payment", tokmiddleware, contfun.payment);
 module.exports = router;
